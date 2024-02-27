@@ -16,62 +16,46 @@ const line = contrib.line({
   label: "Ping Response Time",
 });
 
-// Настройки для графика и мониторинга адресов
-const targetIPs = [
-  "192.168.1.1",
-  "192.168.1.2",
-  "192.168.1.3",
-  "192.168.1.4",
-  "192.168.1.5",
-  "192.168.1.6",
-  "192.168.1.7",
-  "192.168.1.8",
-  "192.168.1.9",
-  "192.168.1.10",
-];
-let dataSeries = targetIPs.map((ip) => ({
-  title: ip,
+// Настройки для графика
+let data = {
   x: [],
   y: [],
-  style: { line: "red" },
-}));
+};
+let series = [{ title: "Ping", x: data.x, y: data.y, style: { line: "red" } }];
+screen.append(line);
+line.setData(series);
+
+let count = 0;
+const targetIP = "192.168.1.168";
+console.log(chalk.blue(`Starting ping monitor for ${targetIP}`));
 
 // Функция для обновления данных и вывода в консоль
 function updateData() {
-  targetIPs.forEach((targetIP, index) => {
-    ping.promise
-      .probe(targetIP)
-      .then(function (res) {
-        if (res.alive) {
-          console.log(
-            chalk.green(`Response from ${targetIP}: time=${res.time}ms`)
-          );
-          dataSeries[index].x.push(dataSeries[index].x.length.toString());
-          dataSeries[index].y.push(res.time);
-          if (dataSeries[index].x.length > 30) {
-            // Ограничиваем количество точек данных
-            dataSeries[index].x.shift();
-            dataSeries[index].y.shift();
-          }
-        } else {
-          console.log(chalk.red(`No response from ${targetIP}`));
+  ping.promise
+    .probe(targetIP)
+    .then(function (res) {
+      if (res.alive) {
+        console.log(
+          chalk.green(`Response from ${targetIP}: time=${res.time}ms`)
+        );
+        data.x.push(count.toString());
+        data.y.push(res.time);
+        if (data.x.length > 30) {
+          // Ограничиваем количество точек данных
+          data.x.shift();
+          data.y.shift();
         }
-        if (index === targetIPs.length - 1) {
-          // Обновляем график только после последнего IP
-          line.setData(dataSeries);
-          screen.render();
-        }
-      })
-      .catch((error) => {
-        console.error(chalk.red(`Error: ${error}`));
-      });
-  });
+        line.setData(series);
+        screen.render();
+      } else {
+        console.log(chalk.red(`No response from ${targetIP}`));
+      }
+      count++;
+    })
+    .catch((error) => {
+      console.error(chalk.red(`Error: ${error}`));
+    });
 }
-
-// Инициализация графика и мониторинг
-screen.append(line);
-line.setData(dataSeries);
-console.log(chalk.blue("Starting ping monitor for multiple targets"));
 
 // Запускаем мониторинг каждые 5 секунд
 setInterval(updateData, 5000);
