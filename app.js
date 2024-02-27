@@ -26,27 +26,28 @@ screen.append(line);
 line.setData(series);
 
 let count = 0;
-const targetIP = "192.168.1.168";
+const targetIP = "192.168.1.168"; // Измените на целевой IP-адрес
 console.log(chalk.blue(`Starting ping monitor for ${targetIP}`));
 
 // Функция для обновления данных и вывода в консоль
 function updateData() {
   ping.promise
-    .probe(targetIP)
+    .probe(targetIP, { timeout: 10 }) // Установите тайм-аут при необходимости
     .then(function (res) {
       if (res.alive) {
         console.log(
           chalk.green(`Response from ${targetIP}: time=${res.time}ms`)
         );
-        data.x.push(count.toString());
+        // Добавление данных для графика
+        data.x.push((count % 30).toString()); // Ограничиваем количество точек данных для отображения
         data.y.push(res.time);
         if (data.x.length > 30) {
-          // Ограничиваем количество точек данных
+          // Удаляем старые данные, чтобы график был актуальным
           data.x.shift();
           data.y.shift();
         }
         line.setData(series);
-        screen.render();
+        screen.render(); // Обновляем экран
       } else {
         console.log(chalk.red(`No response from ${targetIP}`));
       }
